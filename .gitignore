@@ -1,0 +1,9 @@
+# Ignore configuration files with private keys
+config.json
+
+# Ignore Python caches
+__pycache__/
+*.pyc
+
+# Ignore downloaded 3D models folder
+models/
