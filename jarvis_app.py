@@ -12,6 +12,7 @@ from PIL import Image
 # Import local modules
 from config_manager import load_config, save_config
 from gemini_client import JarvisAI
+from deepseek_client import JarvisDeepSeekAI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -719,8 +720,8 @@ class IronmanWindow(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-        self.title("Sistemas del Traje Mark LXXXV")
-        self.geometry("920x620")
+        self.title("Sistemas de Repulsores Mark LXXXV - Stark Industries")
+        self.geometry("940x660")
         self.resizable(False, False)
         
         self.transient(parent)
@@ -728,239 +729,349 @@ class IronmanWindow(ctk.CTkToplevel):
         
         # State & Sim Variables
         self.active = True
-        self.reactor_power = 98.7
-        self.system_temp = 34.2
-        self.repulsor_l_charge = 100.0
-        self.repulsor_r_charge = 100.0
-        self.repulsor_l_status = "LISTO"
-        self.repulsor_r_status = "LISTO"
-        self.thrust_level = 0.0
-        self.hud_status = "TACTICAL PROFILE"
-        self.combat_mode = False
         
-        # Main Layout: 2 Columns Grid
+        # Repulsores de Manos
+        self.rep_hand_l_status = "LISTO"
+        self.rep_hand_l_charge = 100.0
+        self.rep_hand_l_temp = 32.4
+        self.rep_hand_l_power = 100.0
+        
+        self.rep_hand_r_status = "LISTO"
+        self.rep_hand_r_charge = 100.0
+        self.rep_hand_r_temp = 32.4
+        self.rep_hand_r_power = 100.0
+        
+        # Repulsores de Pies (Propulsores de Vuelo)
+        self.thrust_foot_l_level = 0.0
+        self.thrust_foot_l_temp = 34.0
+        self.thrust_foot_l_status = "INACTIVO"
+        
+        self.thrust_foot_r_level = 0.0
+        self.thrust_foot_r_temp = 34.0
+        self.thrust_foot_r_status = "INACTIVO"
+        
+        # Main Layout: Matriz 2x2 para los 4 cuadros de repulsores
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)  # Fila 1: Manos
+        self.grid_rowconfigure(1, weight=1)  # Fila 2: Pies
         
-        # LEFT COLUMN (Reactor & Thrusters)
-        left_f = ctk.CTkFrame(self, fg_color="#0b0b0b", border_width=1, border_color="#ff3e3e")
-        left_f.grid(row=0, column=0, sticky="nsew", padx=15, pady=15)
-        left_f.grid_columnconfigure(0, weight=1)
-        left_f.pack_propagate(False)
+        # =====================================================================
+        # 1. CUADRO REPULSOR MANO IZQUIERDA (Arriba Izquierda)
+        # =====================================================================
+        card_hand_l = ctk.CTkFrame(self, fg_color="#0e131f", border_width=1, border_color="#00e5ff", corner_radius=14)
+        card_hand_l.grid(row=0, column=0, sticky="nsew", padx=(16, 8), pady=(16, 8))
+        card_hand_l.pack_propagate(False)
         
-        # Header
-        lbl_l_title = ctk.CTkLabel(left_f, text="NÚCLEO Y PROPULSIÓN", font=("Segoe UI", 16, "bold"), text_color="#ff3e3e")
-        lbl_l_title.pack(anchor="w", padx=20, pady=(20, 10))
+        lbl_hl_title = ctk.CTkLabel(card_hand_l, text="💥 REPULSOR - MANO IZQUIERDA", font=("Segoe UI", 14, "bold"), text_color="#00e5ff")
+        lbl_hl_title.pack(anchor="w", padx=16, pady=(14, 2))
         
-        # Arc Reactor Card
-        reac_f = ctk.CTkFrame(left_f, fg_color="#141414", border_width=1, border_color="#333333")
-        reac_f.pack(fill="x", padx=20, pady=10)
+        lbl_hl_sub = ctk.CTkLabel(card_hand_l, text="NODO PALMAR IZQ // MARK LXXXV", font=("Segoe UI", 9, "bold"), text_color="#718093")
+        lbl_hl_sub.pack(anchor="w", padx=16, pady=(0, 8))
         
-        lbl_reac_title = ctk.CTkLabel(reac_f, text="⚡ REACTOR ARC - STARK INDUSTRIES", font=("Segoe UI", 11, "bold"), text_color="#a5b1c2")
-        lbl_reac_title.pack(anchor="w", padx=15, pady=(10, 5))
+        row_hl_info = ctk.CTkFrame(card_hand_l, fg_color="transparent")
+        row_hl_info.pack(fill="x", padx=16, pady=(0, 6))
+        self.lbl_hand_l_status = ctk.CTkLabel(row_hl_info, text="ESTADO: LISTO", font=("Consolas", 11, "bold"), text_color="#00ffcc")
+        self.lbl_hand_l_status.pack(side="left")
+        self.lbl_hand_l_temp = ctk.CTkLabel(row_hl_info, text="TEMP: 32.4°C", font=("Consolas", 11), text_color="#a5b1c2")
+        self.lbl_hand_l_temp.pack(side="right")
         
-        self.lbl_reac_status = ctk.CTkLabel(reac_f, text="ENERGÍA: 98.7% | ESTABLE", font=("Consolas", 12, "bold"), text_color="#00e5ff")
-        self.lbl_reac_status.pack(anchor="w", padx=15, pady=2)
+        self.lbl_hand_l_charge = ctk.CTkLabel(card_hand_l, text="CARGA DE CAPACITOR: 100.0%", font=("Segoe UI", 10), text_color="#a5b1c2")
+        self.lbl_hand_l_charge.pack(anchor="w", padx=16, pady=(2, 2))
+        self.prog_hand_l = ctk.CTkProgressBar(card_hand_l, progress_color="#00e5ff", fg_color="#1a2333", height=10)
+        self.prog_hand_l.set(1.0)
+        self.prog_hand_l.pack(fill="x", padx=16, pady=(0, 8))
         
-        self.reac_progress = ctk.CTkProgressBar(reac_f, progress_color="#00e5ff", fg_color="#222222")
-        self.reac_progress.set(0.987)
-        self.reac_progress.pack(fill="x", padx=15, pady=(5, 10))
-        
-        btn_reac_over = ctk.CTkButton(
-            reac_f, text="SOBRECARGAR REACTOR", font=("Segoe UI", 10, "bold"),
-            fg_color="#ff3e3e", hover_color="#ff6b6b", text_color="#ffffff",
-            height=24, command=self.overload_reactor
+        self.lbl_hand_l_power = ctk.CTkLabel(card_hand_l, text="POTENCIA DE DISPARO: 100%", font=("Segoe UI", 10), text_color="#a5b1c2")
+        self.lbl_hand_l_power.pack(anchor="w", padx=16, pady=(0, 2))
+        self.slider_hand_l_power = ctk.CTkSlider(
+            card_hand_l, from_=10.0, to=100.0, progress_color="#00e5ff", button_color="#00e5ff",
+            command=self.adjust_hand_l_power
         )
-        btn_reac_over.pack(side="left", padx=15, pady=(0, 15))
+        self.slider_hand_l_power.set(100.0)
+        self.slider_hand_l_power.pack(fill="x", padx=16, pady=(0, 12))
         
-        btn_reac_cool = ctk.CTkButton(
-            reac_f, text="REFRIGERACIÓN", font=("Segoe UI", 10, "bold"),
-            fg_color="#1c2541", hover_color="#3a0ca3", text_color="#ffffff",
-            height=24, command=self.cool_reactor
-        )
-        btn_reac_cool.pack(side="left", padx=5, pady=(0, 15))
-        
-        # Thrusters Card
-        thrust_f = ctk.CTkFrame(left_f, fg_color="#141414", border_width=1, border_color="#333333")
-        thrust_f.pack(fill="x", padx=20, pady=10)
-        
-        lbl_thrust_title = ctk.CTkLabel(thrust_f, text="🚀 PROPULSORES DE VUELO (BOTAS)", font=("Segoe UI", 11, "bold"), text_color="#a5b1c2")
-        lbl_thrust_title.pack(anchor="w", padx=15, pady=(10, 5))
-        
-        self.lbl_thrust_status = ctk.CTkLabel(thrust_f, text="EMPUJE: 0.0% (INACTIVO) | TEMP: 34.2°C", font=("Consolas", 12, "bold"), text_color="#a5b1c2")
-        self.lbl_thrust_status.pack(anchor="w", padx=15, pady=2)
-        
-        self.slider_thrust = ctk.CTkSlider(thrust_f, from_=0.0, to=100.0, progress_color="#ff8c00", button_color="#ff3e3e", command=self.adjust_thrust)
-        self.slider_thrust.set(0.0)
-        self.slider_thrust.pack(fill="x", padx=15, pady=(5, 15))
-        
-        
-        # RIGHT COLUMN (HUD & Weapons)
-        right_f = ctk.CTkFrame(self, fg_color="#0b0b0b", border_width=1, border_color="#00e5ff")
-        right_f.grid(row=0, column=1, sticky="nsew", padx=15, pady=15)
-        right_f.grid_columnconfigure(0, weight=1)
-        right_f.pack_propagate(False)
-        
-        # Header
-        lbl_r_title = ctk.CTkLabel(right_f, text="HUD Y ARMAS (SISTEMAS MANUALES)", font=("Segoe UI", 16, "bold"), text_color="#00e5ff")
-        lbl_r_title.pack(anchor="w", padx=20, pady=(20, 10))
-        
-        # Repulsors Card
-        rep_f = ctk.CTkFrame(right_f, fg_color="#141414", border_width=1, border_color="#333333")
-        rep_f.pack(fill="x", padx=20, pady=10)
-        
-        lbl_rep_title = ctk.CTkLabel(rep_f, text="💥 REPULSORES EN MANOS", font=("Segoe UI", 11, "bold"), text_color="#a5b1c2")
-        lbl_rep_title.pack(anchor="w", padx=15, pady=(10, 5))
-        
-        self.lbl_rep_l = ctk.CTkLabel(rep_f, text="REPULSOR IZQ: 100% | LISTO", font=("Consolas", 11, "bold"), text_color="#00ffcc")
-        self.lbl_rep_l.pack(anchor="w", padx=15, pady=2)
-        
-        self.lbl_rep_r = ctk.CTkLabel(rep_f, text="REPULSOR DER: 100% | LISTO", font=("Consolas", 11, "bold"), text_color="#00ffcc")
-        self.lbl_rep_r.pack(anchor="w", padx=15, pady=2)
-        
-        btn_fire = ctk.CTkButton(
-            rep_f, text="FOGONAZO DE PRUEBA", font=("Segoe UI", 11, "bold"),
+        self.btn_fire_hand_l = ctk.CTkButton(
+            card_hand_l, text="⚡ DISPARAR FOGONAZO IZQ", font=("Segoe UI", 11, "bold"),
             fg_color="#00e5ff", hover_color="#00b894", text_color="#03071e",
-            height=30, command=self.test_fire_repulsors
+            height=32, corner_radius=8, command=self.fire_hand_l
         )
-        btn_fire.pack(fill="x", padx=15, pady=15)
+        self.btn_fire_hand_l.pack(fill="x", padx=16, pady=(0, 12))
         
-        # HUD Card
-        hud_f = ctk.CTkFrame(right_f, fg_color="#141414", border_width=1, border_color="#333333")
-        hud_f.pack(fill="x", padx=20, pady=10)
+        # =====================================================================
+        # 2. CUADRO REPULSOR MANO DERECHA (Arriba Derecha)
+        # =====================================================================
+        card_hand_r = ctk.CTkFrame(self, fg_color="#0e131f", border_width=1, border_color="#00e5ff", corner_radius=14)
+        card_hand_r.grid(row=0, column=1, sticky="nsew", padx=(8, 16), pady=(16, 8))
+        card_hand_r.pack_propagate(False)
         
-        lbl_hud_title = ctk.CTkLabel(hud_f, text="🕶️ SISTEMAS HUD & ESCANER TÁCTICO", font=("Segoe UI", 11, "bold"), text_color="#a5b1c2")
-        lbl_hud_title.pack(anchor="w", padx=15, pady=(10, 5))
+        lbl_hr_title = ctk.CTkLabel(card_hand_r, text="💥 REPULSOR - MANO DERECHA", font=("Segoe UI", 14, "bold"), text_color="#00e5ff")
+        lbl_hr_title.pack(anchor="w", padx=16, pady=(14, 2))
         
-        # Diagnostic Profile
-        lbl_diag = ctk.CTkLabel(hud_f, text="Perfil de HUD:", font=("Segoe UI", 10), text_color="#a5b1c2")
-        lbl_diag.pack(anchor="w", padx=15, pady=(5, 2))
+        lbl_hr_sub = ctk.CTkLabel(card_hand_r, text="NODO PALMAR DER // MARK LXXXV", font=("Segoe UI", 9, "bold"), text_color="#718093")
+        lbl_hr_sub.pack(anchor="w", padx=16, pady=(0, 8))
         
-        self.drop_diag = ctk.CTkOptionMenu(
-            hud_f, values=["TACTICAL PROFILE", "COMBAT ENGAGEMENT", "FLIGHT NAVIGATION", "STEALTH PROTOCOL"],
-            fg_color="#1c2541", button_color="#00e5ff", button_hover_color="#ff3e3e",
-            command=self.change_hud_profile
+        row_hr_info = ctk.CTkFrame(card_hand_r, fg_color="transparent")
+        row_hr_info.pack(fill="x", padx=16, pady=(0, 6))
+        self.lbl_hand_r_status = ctk.CTkLabel(row_hr_info, text="ESTADO: LISTO", font=("Consolas", 11, "bold"), text_color="#00ffcc")
+        self.lbl_hand_r_status.pack(side="left")
+        self.lbl_hand_r_temp = ctk.CTkLabel(row_hr_info, text="TEMP: 32.4°C", font=("Consolas", 11), text_color="#a5b1c2")
+        self.lbl_hand_r_temp.pack(side="right")
+        
+        self.lbl_hand_r_charge = ctk.CTkLabel(card_hand_r, text="CARGA DE CAPACITOR: 100.0%", font=("Segoe UI", 10), text_color="#a5b1c2")
+        self.lbl_hand_r_charge.pack(anchor="w", padx=16, pady=(2, 2))
+        self.prog_hand_r = ctk.CTkProgressBar(card_hand_r, progress_color="#00e5ff", fg_color="#1a2333", height=10)
+        self.prog_hand_r.set(1.0)
+        self.prog_hand_r.pack(fill="x", padx=16, pady=(0, 8))
+        
+        self.lbl_hand_r_power = ctk.CTkLabel(card_hand_r, text="POTENCIA DE DISPARO: 100%", font=("Segoe UI", 10), text_color="#a5b1c2")
+        self.lbl_hand_r_power.pack(anchor="w", padx=16, pady=(0, 2))
+        self.slider_hand_r_power = ctk.CTkSlider(
+            card_hand_r, from_=10.0, to=100.0, progress_color="#00e5ff", button_color="#00e5ff",
+            command=self.adjust_hand_r_power
         )
-        self.drop_diag.set("TACTICAL PROFILE")
-        self.drop_diag.pack(anchor="w", padx=15, pady=(0, 10))
+        self.slider_hand_r_power.set(100.0)
+        self.slider_hand_r_power.pack(fill="x", padx=16, pady=(0, 12))
         
-        # Combat Mode Toggle
-        self.switch_combat = ctk.CTkSwitch(
-            hud_f, text="MODO COMBATE COMPLETO", font=("Segoe UI", 11, "bold"),
-            progress_color="#ff3e3e", fg_color="#1c2541", command=self.toggle_combat_mode
+        self.btn_fire_hand_r = ctk.CTkButton(
+            card_hand_r, text="⚡ DISPARAR FOGONAZO DER", font=("Segoe UI", 11, "bold"),
+            fg_color="#00e5ff", hover_color="#00b894", text_color="#03071e",
+            height=32, corner_radius=8, command=self.fire_hand_r
         )
-        self.switch_combat.pack(anchor="w", padx=15, pady=15)
+        self.btn_fire_hand_r.pack(fill="x", padx=16, pady=(0, 12))
+        
+        # =====================================================================
+        # 3. CUADRO REPULSOR PIE IZQUIERDO (Abajo Izquierda)
+        # =====================================================================
+        card_foot_l = ctk.CTkFrame(self, fg_color="#0e131f", border_width=1, border_color="#ff8c00", corner_radius=14)
+        card_foot_l.grid(row=1, column=0, sticky="nsew", padx=(16, 8), pady=(8, 16))
+        card_foot_l.pack_propagate(False)
+        
+        lbl_fl_title = ctk.CTkLabel(card_foot_l, text="🚀 REPULSOR - PIE IZQUIERDO", font=("Segoe UI", 14, "bold"), text_color="#ff8c00")
+        lbl_fl_title.pack(anchor="w", padx=16, pady=(14, 2))
+        
+        lbl_fl_sub = ctk.CTkLabel(card_foot_l, text="PROPULSOR PLANTAR IZQ // TOBERA VECTORIAL", font=("Segoe UI", 9, "bold"), text_color="#718093")
+        lbl_fl_sub.pack(anchor="w", padx=16, pady=(0, 8))
+        
+        row_fl_info = ctk.CTkFrame(card_foot_l, fg_color="transparent")
+        row_fl_info.pack(fill="x", padx=16, pady=(0, 6))
+        self.lbl_foot_l_status = ctk.CTkLabel(row_fl_info, text="ESTADO: INACTIVO", font=("Consolas", 11, "bold"), text_color="#a5b1c2")
+        self.lbl_foot_l_status.pack(side="left")
+        self.lbl_foot_l_temp = ctk.CTkLabel(row_fl_info, text="TEMP: 34.0°C", font=("Consolas", 11), text_color="#a5b1c2")
+        self.lbl_foot_l_temp.pack(side="right")
+        
+        self.lbl_foot_l_thrust = ctk.CTkLabel(card_foot_l, text="EMPUJE VECTORIAL: 0.0%", font=("Segoe UI", 10), text_color="#a5b1c2")
+        self.lbl_foot_l_thrust.pack(anchor="w", padx=16, pady=(2, 2))
+        self.prog_foot_l = ctk.CTkProgressBar(card_foot_l, progress_color="#ff8c00", fg_color="#1a2333", height=10)
+        self.prog_foot_l.set(0.0)
+        self.prog_foot_l.pack(fill="x", padx=16, pady=(0, 8))
+        
+        lbl_fl_reg = ctk.CTkLabel(card_foot_l, text="REGULADOR DE EMPUJE (VUELO):", font=("Segoe UI", 10), text_color="#a5b1c2")
+        lbl_fl_reg.pack(anchor="w", padx=16, pady=(0, 2))
+        self.slider_foot_l = ctk.CTkSlider(
+            card_foot_l, from_=0.0, to=100.0, progress_color="#ff8c00", button_color="#ff8c00",
+            command=self.adjust_foot_l_thrust
+        )
+        self.slider_foot_l.set(0.0)
+        self.slider_foot_l.pack(fill="x", padx=16, pady=(0, 12))
+        
+        self.btn_boost_foot_l = ctk.CTkButton(
+            card_foot_l, text="🔥 IMPULSO RÁPIDO (BOOST IZQ)", font=("Segoe UI", 11, "bold"),
+            fg_color="#ff8c00", hover_color="#e67e22", text_color="#03071e",
+            height=32, corner_radius=8, command=self.boost_foot_l
+        )
+        self.btn_boost_foot_l.pack(fill="x", padx=16, pady=(0, 12))
+        
+        # =====================================================================
+        # 4. CUADRO REPULSOR PIE DERECHO (Abajo Derecha)
+        # =====================================================================
+        card_foot_r = ctk.CTkFrame(self, fg_color="#0e131f", border_width=1, border_color="#ff8c00", corner_radius=14)
+        card_foot_r.grid(row=1, column=1, sticky="nsew", padx=(8, 16), pady=(8, 16))
+        card_foot_r.pack_propagate(False)
+        
+        lbl_fr_title = ctk.CTkLabel(card_foot_r, text="🚀 REPULSOR - PIE DERECHO", font=("Segoe UI", 14, "bold"), text_color="#ff8c00")
+        lbl_fr_title.pack(anchor="w", padx=16, pady=(14, 2))
+        
+        lbl_fr_sub = ctk.CTkLabel(card_foot_r, text="PROPULSOR PLANTAR DER // TOBERA VECTORIAL", font=("Segoe UI", 9, "bold"), text_color="#718093")
+        lbl_fr_sub.pack(anchor="w", padx=16, pady=(0, 8))
+        
+        row_fr_info = ctk.CTkFrame(card_foot_r, fg_color="transparent")
+        row_fr_info.pack(fill="x", padx=16, pady=(0, 6))
+        self.lbl_foot_r_status = ctk.CTkLabel(row_fr_info, text="ESTADO: INACTIVO", font=("Consolas", 11, "bold"), text_color="#a5b1c2")
+        self.lbl_foot_r_status.pack(side="left")
+        self.lbl_foot_r_temp = ctk.CTkLabel(row_fr_info, text="TEMP: 34.0°C", font=("Consolas", 11), text_color="#a5b1c2")
+        self.lbl_foot_r_temp.pack(side="right")
+        
+        self.lbl_foot_r_thrust = ctk.CTkLabel(card_foot_r, text="EMPUJE VECTORIAL: 0.0%", font=("Segoe UI", 10), text_color="#a5b1c2")
+        self.lbl_foot_r_thrust.pack(anchor="w", padx=16, pady=(2, 2))
+        self.prog_foot_r = ctk.CTkProgressBar(card_foot_r, progress_color="#ff8c00", fg_color="#1a2333", height=10)
+        self.prog_foot_r.set(0.0)
+        self.prog_foot_r.pack(fill="x", padx=16, pady=(0, 8))
+        
+        lbl_fr_reg = ctk.CTkLabel(card_foot_r, text="REGULADOR DE EMPUJE (VUELO):", font=("Segoe UI", 10), text_color="#a5b1c2")
+        lbl_fr_reg.pack(anchor="w", padx=16, pady=(0, 2))
+        self.slider_foot_r = ctk.CTkSlider(
+            card_foot_r, from_=0.0, to=100.0, progress_color="#ff8c00", button_color="#ff8c00",
+            command=self.adjust_foot_r_thrust
+        )
+        self.slider_foot_r.set(0.0)
+        self.slider_foot_r.pack(fill="x", padx=16, pady=(0, 12))
+        
+        self.btn_boost_foot_r = ctk.CTkButton(
+            card_foot_r, text="🔥 IMPULSO RÁPIDO (BOOST DER)", font=("Segoe UI", 11, "bold"),
+            fg_color="#ff8c00", hover_color="#e67e22", text_color="#03071e",
+            height=32, corner_radius=8, command=self.boost_foot_r
+        )
+        self.btn_boost_foot_r.pack(fill="x", padx=16, pady=(0, 12))
         
         # Start Live Fluctuation Thread
         threading.Thread(target=self.live_fluctuation_worker, daemon=True).start()
         
-    def overload_reactor(self):
-        self.reactor_power = 125.0
-        self.system_temp = 89.4
-        self.lbl_reac_status.configure(text="ENERGÍA: 125.0% | !!!SOBRECARGA!!!", text_color="#ff3e3e")
-        self.reac_progress.set(1.0)
-        self.reac_progress.configure(progress_color="#ff3e3e")
-        messagebox.showwarning("Reactor Arc", "¡ADVERTENCIA! Reactor Arc operando al 125%. Incremento crítico de temperatura del traje detectado.")
+    def adjust_hand_l_power(self, value):
+        self.rep_hand_l_power = float(value)
+        self.lbl_hand_l_power.configure(text=f"POTENCIA DE DISPARO: {self.rep_hand_l_power:.0f}%")
         
-    def cool_reactor(self):
-        self.reactor_power = 98.7
-        self.system_temp = 32.1
-        self.lbl_reac_status.configure(text="ENERGÍA: 98.7% | REFRIGERADO", text_color="#00e5ff")
-        self.reac_progress.set(0.987)
-        self.reac_progress.configure(progress_color="#00e5ff")
+    def adjust_hand_r_power(self, value):
+        self.rep_hand_r_power = float(value)
+        self.lbl_hand_r_power.configure(text=f"POTENCIA DE DISPARO: {self.rep_hand_r_power:.0f}%")
         
-    def adjust_thrust(self, value):
-        self.thrust_level = float(value)
-        self.system_temp = 34.2 + (self.thrust_level * 0.4)
-        status = "ACTIVO" if self.thrust_level > 0 else "INACTIVO"
-        self.lbl_thrust_status.configure(
-            text=f"EMPUJE: {self.thrust_level:.1f}% ({status}) | TEMP: {self.system_temp:.1f}°C",
-            text_color="#ff8c00" if self.thrust_level > 0 else "#a5b1c2"
-        )
-        
-    def test_fire_repulsors(self):
-        if self.repulsor_l_status != "LISTO":
+    def fire_hand_l(self):
+        if self.rep_hand_l_status != "LISTO":
             return
             
         def anim():
-            # Charging
-            self.repulsor_l_status = "CARGANDO"
-            self.repulsor_r_status = "CARGANDO"
-            self.lbl_rep_l.configure(text="REPULSOR IZQ: CARGANDO CAPACITORES...", text_color="#ff8c00")
-            self.lbl_rep_r.configure(text="REPULSOR DER: CARGANDO CAPACITORES...", text_color="#ff8c00")
-            time.sleep(1.0)
+            self.rep_hand_l_status = "CARGANDO"
+            self.lbl_hand_l_status.configure(text="ESTADO: CARGANDO...", text_color="#ff8c00")
+            self.btn_fire_hand_l.configure(state="disabled", fg_color="#555555")
+            time.sleep(0.9)
             
-            # Firing
-            self.repulsor_l_status = "DISPARANDO"
-            self.repulsor_r_status = "DISPARANDO"
-            self.lbl_rep_l.configure(text="REPULSOR IZQ: !!!DISPARANDO!!!", text_color="#ff3e3e")
-            self.lbl_rep_r.configure(text="REPULSOR DER: !!!DISPARANDO!!!", text_color="#ff3e3e")
-            self.reactor_power -= 4.2
+            self.rep_hand_l_status = "DISPARANDO"
+            self.rep_hand_l_temp = 32.4 + (self.rep_hand_l_power * 0.4)
+            self.lbl_hand_l_status.configure(text="ESTADO: ¡¡DISPARANDO!!", text_color="#ff3e3e")
+            self.lbl_hand_l_temp.configure(text=f"TEMP: {self.rep_hand_l_temp:.1f}°C")
+            self.prog_hand_l.set(0.15)
+            self.lbl_hand_l_charge.configure(text="CARGA DE CAPACITOR: 15.0%")
             time.sleep(0.8)
             
-            # Cooling Down
-            self.repulsor_l_status = "ENFRIANDO"
-            self.repulsor_r_status = "ENFRIANDO"
-            self.lbl_rep_l.configure(text="REPULSOR IZQ: ENFRIANDO SISTEMA...", text_color="#eccc68")
-            self.lbl_rep_r.configure(text="REPULSOR DER: ENFRIANDO SISTEMA...", text_color="#eccc68")
-            time.sleep(1.2)
+            self.rep_hand_l_status = "ENFRIANDO"
+            self.lbl_hand_l_status.configure(text="ESTADO: ENFRIANDO...", text_color="#eccc68")
+            # Recarga progresiva
+            for step in range(1, 11):
+                time.sleep(0.1)
+                val = 0.15 + (step * 0.085)
+                self.prog_hand_l.set(min(1.0, val))
+                self.lbl_hand_l_charge.configure(text=f"CARGA DE CAPACITOR: {min(100.0, val * 100):.1f}%")
             
-            # Ready
-            self.repulsor_l_status = "LISTO"
-            self.repulsor_r_status = "LISTO"
-            self.lbl_rep_l.configure(text="REPULSOR IZQ: 100% | LISTO", text_color="#00ffcc")
-            self.lbl_rep_r.configure(text="REPULSOR DER: 100% | LISTO", text_color="#00ffcc")
+            self.rep_hand_l_temp = 32.4
+            self.lbl_hand_l_temp.configure(text=f"TEMP: {self.rep_hand_l_temp:.1f}°C")
+            self.rep_hand_l_status = "LISTO"
+            self.lbl_hand_l_status.configure(text="ESTADO: LISTO", text_color="#00ffcc")
+            self.btn_fire_hand_l.configure(state="normal", fg_color="#00e5ff")
             
         threading.Thread(target=anim, daemon=True).start()
         
-    def change_hud_profile(self, value):
-        self.hud_status = value
-        
-    def toggle_combat_mode(self):
-        self.combat_mode = self.switch_combat.get() == 1
-        if self.combat_mode:
-            self.configure(border_color="#ff3e3e")
-            self.drop_diag.set("COMBAT ENGAGEMENT")
-            self.change_hud_profile("COMBAT ENGAGEMENT")
-        else:
-            self.configure(border_color="#00e5ff")
-            self.drop_diag.set("TACTICAL PROFILE")
-            self.change_hud_profile("TACTICAL PROFILE")
+    def fire_hand_r(self):
+        if self.rep_hand_r_status != "LISTO":
+            return
             
+        def anim():
+            self.rep_hand_r_status = "CARGANDO"
+            self.lbl_hand_r_status.configure(text="ESTADO: CARGANDO...", text_color="#ff8c00")
+            self.btn_fire_hand_r.configure(state="disabled", fg_color="#555555")
+            time.sleep(0.9)
+            
+            self.rep_hand_r_status = "DISPARANDO"
+            self.rep_hand_r_temp = 32.4 + (self.rep_hand_r_power * 0.4)
+            self.lbl_hand_r_status.configure(text="ESTADO: ¡¡DISPARANDO!!", text_color="#ff3e3e")
+            self.lbl_hand_r_temp.configure(text=f"TEMP: {self.rep_hand_r_temp:.1f}°C")
+            self.prog_hand_r.set(0.15)
+            self.lbl_hand_r_charge.configure(text="CARGA DE CAPACITOR: 15.0%")
+            time.sleep(0.8)
+            
+            self.rep_hand_r_status = "ENFRIANDO"
+            self.lbl_hand_r_status.configure(text="ESTADO: ENFRIANDO...", text_color="#eccc68")
+            # Recarga progresiva
+            for step in range(1, 11):
+                time.sleep(0.1)
+                val = 0.15 + (step * 0.085)
+                self.prog_hand_r.set(min(1.0, val))
+                self.lbl_hand_r_charge.configure(text=f"CARGA DE CAPACITOR: {min(100.0, val * 100):.1f}%")
+            
+            self.rep_hand_r_temp = 32.4
+            self.lbl_hand_r_temp.configure(text=f"TEMP: {self.rep_hand_r_temp:.1f}°C")
+            self.rep_hand_r_status = "LISTO"
+            self.lbl_hand_r_status.configure(text="ESTADO: LISTO", text_color="#00ffcc")
+            self.btn_fire_hand_r.configure(state="normal", fg_color="#00e5ff")
+            
+        threading.Thread(target=anim, daemon=True).start()
+        
+    def adjust_foot_l_thrust(self, value):
+        self.thrust_foot_l_level = float(value)
+        self.thrust_foot_l_temp = 34.0 + (self.thrust_foot_l_level * 0.55)
+        self.prog_foot_l.set(self.thrust_foot_l_level / 100.0)
+        status_txt = "PROPULSIÓN ACTIVA" if self.thrust_foot_l_level > 0 else "INACTIVO"
+        status_col = "#ff8c00" if self.thrust_foot_l_level > 0 else "#a5b1c2"
+        self.lbl_foot_l_status.configure(text=f"ESTADO: {status_txt}", text_color=status_col)
+        self.lbl_foot_l_thrust.configure(text=f"EMPUJE VECTORIAL: {self.thrust_foot_l_level:.1f}%")
+        self.lbl_foot_l_temp.configure(text=f"TEMP: {self.thrust_foot_l_temp:.1f}°C")
+        
+    def adjust_foot_r_thrust(self, value):
+        self.thrust_foot_r_level = float(value)
+        self.thrust_foot_r_temp = 34.0 + (self.thrust_foot_r_level * 0.55)
+        self.prog_foot_r.set(self.thrust_foot_r_level / 100.0)
+        status_txt = "PROPULSIÓN ACTIVA" if self.thrust_foot_r_level > 0 else "INACTIVO"
+        status_col = "#ff8c00" if self.thrust_foot_r_level > 0 else "#a5b1c2"
+        self.lbl_foot_r_status.configure(text=f"ESTADO: {status_txt}", text_color=status_col)
+        self.lbl_foot_r_thrust.configure(text=f"EMPUJE VECTORIAL: {self.thrust_foot_r_level:.1f}%")
+        self.lbl_foot_r_temp.configure(text=f"TEMP: {self.thrust_foot_r_temp:.1f}°C")
+        
+    def boost_foot_l(self):
+        prev_val = self.thrust_foot_l_level
+        def boost_anim():
+            self.slider_foot_l.set(100.0)
+            self.adjust_foot_l_thrust(100.0)
+            time.sleep(1.2)
+            self.slider_foot_l.set(prev_val)
+            self.adjust_foot_l_thrust(prev_val)
+        threading.Thread(target=boost_anim, daemon=True).start()
+        
+    def boost_foot_r(self):
+        prev_val = self.thrust_foot_r_level
+        def boost_anim():
+            self.slider_foot_r.set(100.0)
+            self.adjust_foot_r_thrust(100.0)
+            time.sleep(1.2)
+            self.slider_foot_r.set(prev_val)
+            self.adjust_foot_r_thrust(prev_val)
+        threading.Thread(target=boost_anim, daemon=True).start()
+        
     def live_fluctuation_worker(self):
         import random
         while self.active:
-            time.sleep(1)
+            time.sleep(1.2)
             if not self.winfo_exists():
                 break
                 
-            # Fluctuate energy slightly
-            if self.reactor_power > 0 and self.repulsor_l_status == "LISTO":
-                change = random.uniform(-0.15, 0.15)
-                self.reactor_power = max(5.0, min(130.0, self.reactor_power + change))
+            # Micro-fluctuaciones de temperatura realistas para telemetría
+            if self.rep_hand_l_status == "LISTO":
+                fluc = random.uniform(-0.15, 0.15)
+                self.rep_hand_l_temp = max(31.5, min(33.5, self.rep_hand_l_temp + fluc))
+                self.lbl_hand_l_temp.configure(text=f"TEMP: {self.rep_hand_l_temp:.1f}°C")
                 
-                # Slowly draw power if thrusters are on
-                if self.thrust_level > 0:
-                    self.reactor_power = max(1.0, self.reactor_power - (self.thrust_level * 0.01))
-                    
-                # Update label and progress bar
-                color = "#ff3e3e" if self.reactor_power > 110 else "#00e5ff"
-                status_txt = "SOBRECARGADO" if self.reactor_power > 110 else "ESTABLE"
+            if self.rep_hand_r_status == "LISTO":
+                fluc = random.uniform(-0.15, 0.15)
+                self.rep_hand_r_temp = max(31.5, min(33.5, self.rep_hand_r_temp + fluc))
+                self.lbl_hand_r_temp.configure(text=f"TEMP: {self.rep_hand_r_temp:.1f}°C")
                 
-                self.lbl_reac_status.configure(
-                    text=f"ENERGÍA: {self.reactor_power:.2f}% | {status_txt}",
-                    text_color=color
-                )
-                self.reac_progress.set(min(1.0, self.reactor_power / 100.0))
-                self.reac_progress.configure(progress_color=color)
+            if self.thrust_foot_l_level > 0:
+                fluc = random.uniform(-0.4, 0.4)
+                self.thrust_foot_l_temp = max(34.0, min(110.0, self.thrust_foot_l_temp + fluc))
+                self.lbl_foot_l_temp.configure(text=f"TEMP: {self.thrust_foot_l_temp:.1f}°C")
                 
-            # Fluctuate thruster temp slightly
-            if self.thrust_level > 0:
-                self.system_temp = max(34.2, min(120.0, self.system_temp + random.uniform(-0.5, 0.5)))
-                self.lbl_thrust_status.configure(
-                    text=f"EMPUJE: {self.thrust_level:.1f}% (ACTIVO) | TEMP: {self.system_temp:.1f}°C"
-                )
+            if self.thrust_foot_r_level > 0:
+                fluc = random.uniform(-0.4, 0.4)
+                self.thrust_foot_r_temp = max(34.0, min(110.0, self.thrust_foot_r_temp + fluc))
+                self.lbl_foot_r_temp.configure(text=f"TEMP: {self.thrust_foot_r_temp:.1f}°C")
                 
     def destroy(self):
         self.active = False
@@ -1324,9 +1435,9 @@ class JarvisApp(ctk.CTk):
         # Load configuration
         self.config = load_config()
         
-        # Initialize Gemini API client if API key exists
+        # Initialize AI client if API key exists
         self.jarvis_ai = None
-        self.init_gemini_client()
+        self.init_ai_client()
         
         # Setup Layout grid
         self.grid_columnconfigure(0, weight=0) # Sidebar
@@ -1344,29 +1455,52 @@ class JarvisApp(ctk.CTk):
         # Show default tab (Chat)
         self.show_view("chat", self.btn_tab_chat)
 
-    def init_gemini_client(self):
-        """Initializes the JarvisAI gemini client in a separate thread if API Key exists."""
-        api_key = self.config.get("gemini_api_key")
-        model = self.config.get("gemini_model", "gemini-3.5-flash")
+    def init_ai_client(self):
+        """Initializes the active AI client (DeepSeek or Gemini) if API Key exists."""
+        provider = self.config.get("ai_provider", "DeepSeek")
         sys_prompt = self.config.get("system_prompt")
         
-        if api_key:
-            try:
-                def open_app_callback(app_name):
-                    return self.open_app_by_name(app_name)
-                    
-                self.jarvis_ai = JarvisAI(
-                    api_key=api_key,
-                    model_name=model,
-                    system_instruction=sys_prompt,
-                    open_app_callback=open_app_callback
-                )
-                logger.info("Gemini AI Client initialized successfully.")
-            except Exception as e:
-                logger.error(f"Failed to initialize Gemini Client: {e}")
+        def open_app_callback(app_name):
+            return self.open_app_by_name(app_name)
+
+        if provider == "DeepSeek":
+            api_key = self.config.get("deepseek_api_key")
+            model = self.config.get("deepseek_model", "deepseek-v4-pro")
+            if api_key:
+                try:
+                    self.jarvis_ai = JarvisDeepSeekAI(
+                        api_key=api_key,
+                        model_name=model,
+                        system_instruction=sys_prompt,
+                        open_app_callback=open_app_callback
+                    )
+                    logger.info(f"DeepSeek AI Client ({model}) initialized successfully.")
+                except Exception as e:
+                    logger.error(f"Failed to initialize DeepSeek Client: {e}")
+                    self.jarvis_ai = None
+            else:
                 self.jarvis_ai = None
         else:
-            self.jarvis_ai = None
+            api_key = self.config.get("gemini_api_key")
+            model = self.config.get("gemini_model", "gemini-3.5-flash")
+            if api_key:
+                try:
+                    self.jarvis_ai = JarvisAI(
+                        api_key=api_key,
+                        model_name=model,
+                        system_instruction=sys_prompt,
+                        open_app_callback=open_app_callback
+                    )
+                    logger.info(f"Gemini AI Client ({model}) initialized successfully.")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Gemini Client: {e}")
+                    self.jarvis_ai = None
+            else:
+                self.jarvis_ai = None
+
+    def init_gemini_client(self):
+        """Backward compatibility alias."""
+        self.init_ai_client()
 
     def setup_sidebar(self):
         """Creates the sidebar frame with title and navigation buttons."""
@@ -1452,25 +1586,26 @@ class JarvisApp(ctk.CTk):
         )
         self.status_title.pack(anchor="w", padx=10, pady=(5, 2))
         
-        # Gemini Status Line
+        # AI Status Line
         self.gemini_status_frame = ctk.CTkFrame(self.status_frame, fg_color="transparent")
         self.gemini_status_frame.pack(fill="x", padx=10)
         
         self.gemini_dot = ctk.CTkLabel(self.gemini_status_frame, text="●", text_color="red", font=("Segoe UI", 14))
         self.gemini_dot.pack(side="left")
-        self.gemini_status_lbl = ctk.CTkLabel(self.gemini_status_frame, text=" Gemini: Desconectado", font=("Segoe UI", 11), text_color="#a5b1c2")
+        self.gemini_status_lbl = ctk.CTkLabel(self.gemini_status_frame, text=" IA: Desconectada", font=("Segoe UI", 11), text_color="#a5b1c2")
         self.gemini_status_lbl.pack(side="left")
         
         self.update_system_status()
 
     def update_system_status(self):
-        """Updates the visual status dots and labels for Gemini."""
+        """Updates the visual status dots and labels for the active AI provider."""
+        provider = self.config.get("ai_provider", "DeepSeek")
         if self.jarvis_ai:
             self.gemini_dot.configure(text_color="#00e5ff")
-            self.gemini_status_lbl.configure(text=" Gemini: Conectado")
+            self.gemini_status_lbl.configure(text=f" {provider}: Conectado")
         else:
             self.gemini_dot.configure(text_color="#ff4757")
-            self.gemini_status_lbl.configure(text=" Gemini: Clave requerida")
+            self.gemini_status_lbl.configure(text=f" {provider}: Clave requerida")
 
     def setup_views(self):
         """Pre-initializes the views (frames) in the main display area."""
@@ -1667,9 +1802,10 @@ class JarvisApp(ctk.CTk):
         self.add_chat_bubble("Usuario", message)
         
         if not self.jarvis_ai:
+            provider = self.config.get("ai_provider", "DeepSeek")
             self.add_chat_bubble(
                 "J.A.R.V.I.S.", 
-                "Señor, no puedo procesar su solicitud. La clave de API de Gemini no está configurada. "
+                f"Señor, no puedo procesar su solicitud. La clave de API de {provider} no está configurada. "
                 "Por favor, diríjase a la pestaña de Configuración para ingresarla."
             )
             return
@@ -1681,15 +1817,16 @@ class JarvisApp(ctk.CTk):
         threading.Thread(target=self.process_ai_response, args=(message,), daemon=True).start()
 
     def process_ai_response(self, message):
+        provider = self.config.get("ai_provider", "DeepSeek")
         try:
             response = self.jarvis_ai.send_message(message)
             # Update UI on main thread
             self.after(0, lambda: self.add_chat_bubble("J.A.R.V.I.S.", response))
         except Exception as e:
-            logger.error(f"Error calling Gemini: {e}")
+            logger.error(f"Error calling {provider}: {e}")
             self.after(0, lambda: self.add_chat_bubble(
                 "J.A.R.V.I.S.", 
-                f"Lo siento, señor. He experimentado una anomalía en mi núcleo de comunicación. Error: {str(e)}"
+                f"Lo siento, señor. He experimentado una anomalía en mi núcleo de comunicación ({provider}). Error: {str(e)}"
             ))
         finally:
             self.after(0, lambda: self.btn_send.configure(state="normal", text="ENVIAR"))
@@ -1965,24 +2102,68 @@ class JarvisApp(ctk.CTk):
         scroll_body.grid(row=1, column=0, sticky="nsew", pady=5)
         scroll_body.grid_columnconfigure(0, weight=1)
         
-        # 1. API KEY SECTION
-        lbl_sec_api = ctk.CTkLabel(scroll_body, text="CREDENCIALES Y MODELO DE GEMINI AI", font=("Segoe UI", 13, "bold"), text_color="#00e5ff")
+        # 1. API KEY & AI PROVIDER SECTION
+        lbl_sec_api = ctk.CTkLabel(scroll_body, text="PROVEEDOR Y CREDENCIALES DE INTELIGENCIA ARTIFICIAL", font=("Segoe UI", 13, "bold"), text_color="#00e5ff")
         lbl_sec_api.pack(anchor="w", padx=15, pady=(15, 10))
         
-        # Gemini API Entry
-        self.lbl_api_key = ctk.CTkLabel(scroll_body, text="Gemini API Key:", font=("Segoe UI", 11), text_color="#a5b1c2")
-        self.lbl_api_key.pack(anchor="w", padx=25, pady=2)
+        # Provider Selector
+        self.lbl_provider_sel = ctk.CTkLabel(scroll_body, text="Proveedor de IA Activo:", font=("Segoe UI", 11, "bold"), text_color="#a5b1c2")
+        self.lbl_provider_sel.pack(anchor="w", padx=25, pady=2)
         
-        self.ent_api_key = ctk.CTkEntry(scroll_body, placeholder_text="AIzaSy...", width=600, show="*")
-        self.ent_api_key.pack(anchor="w", padx=25, pady=(0, 10))
+        self.opt_ai_provider = ctk.CTkOptionMenu(
+            scroll_body,
+            values=["DeepSeek", "Gemini"],
+            width=250,
+            command=self.on_ai_provider_changed
+        )
+        self.opt_ai_provider.pack(anchor="w", padx=25, pady=(0, 15))
+
+        # DeepSeek Config Frame
+        self.frame_deepseek = ctk.CTkFrame(scroll_body, fg_color="#0e1726", border_width=1, border_color="#1f2d40", corner_radius=6)
+        self.frame_deepseek.pack(fill="x", padx=25, pady=(0, 15))
         
-        # Gemini Model Selector
-        self.lbl_model_sel = ctk.CTkLabel(scroll_body, text="Modelo de Gemini:", font=("Segoe UI", 11), text_color="#a5b1c2")
-        self.lbl_model_sel.pack(anchor="w", padx=25, pady=2)
+        lbl_ds_title = ctk.CTkLabel(self.frame_deepseek, text="Configuración DeepSeek", font=("Segoe UI", 12, "bold"), text_color="#00d2d3")
+        lbl_ds_title.pack(anchor="w", padx=15, pady=(10, 5))
         
-        # Add stable 2026/2025 and fallbacks
+        self.lbl_ds_key = ctk.CTkLabel(self.frame_deepseek, text="DeepSeek API Key:", font=("Segoe UI", 11), text_color="#a5b1c2")
+        self.lbl_ds_key.pack(anchor="w", padx=15, pady=2)
+        
+        self.ent_deepseek_key = ctk.CTkEntry(self.frame_deepseek, placeholder_text="sk-...", width=550, show="*")
+        self.ent_deepseek_key.pack(anchor="w", padx=15, pady=(0, 10))
+        
+        self.lbl_ds_model = ctk.CTkLabel(self.frame_deepseek, text="Modelo de DeepSeek:", font=("Segoe UI", 11), text_color="#a5b1c2")
+        self.lbl_ds_model.pack(anchor="w", padx=15, pady=2)
+        
+        self.opt_deepseek_model = ctk.CTkOptionMenu(
+            self.frame_deepseek,
+            values=[
+                "deepseek-v4-pro",
+                "deepseek-flash",
+                "deepseek-chat",
+                "deepseek-reasoner"
+            ],
+            width=250
+        )
+        self.opt_deepseek_model.pack(anchor="w", padx=15, pady=(0, 15))
+
+        # Gemini Config Frame
+        self.frame_gemini = ctk.CTkFrame(scroll_body, fg_color="#0e1726", border_width=1, border_color="#1f2d40", corner_radius=6)
+        self.frame_gemini.pack(fill="x", padx=25, pady=(0, 15))
+        
+        lbl_gem_title = ctk.CTkLabel(self.frame_gemini, text="Configuración Gemini AI", font=("Segoe UI", 12, "bold"), text_color="#00e5ff")
+        lbl_gem_title.pack(anchor="w", padx=15, pady=(10, 5))
+        
+        self.lbl_api_key = ctk.CTkLabel(self.frame_gemini, text="Gemini API Key:", font=("Segoe UI", 11), text_color="#a5b1c2")
+        self.lbl_api_key.pack(anchor="w", padx=15, pady=2)
+        
+        self.ent_api_key = ctk.CTkEntry(self.frame_gemini, placeholder_text="AIzaSy...", width=550, show="*")
+        self.ent_api_key.pack(anchor="w", padx=15, pady=(0, 10))
+        
+        self.lbl_model_sel = ctk.CTkLabel(self.frame_gemini, text="Modelo de Gemini:", font=("Segoe UI", 11), text_color="#a5b1c2")
+        self.lbl_model_sel.pack(anchor="w", padx=15, pady=2)
+        
         self.opt_model = ctk.CTkOptionMenu(
-            scroll_body, 
+            self.frame_gemini, 
             values=[
                 "gemini-3.5-flash", 
                 "gemini-3.5-flash-lite", 
@@ -1995,7 +2176,7 @@ class JarvisApp(ctk.CTk):
             ],
             width=250
         )
-        self.opt_model.pack(anchor="w", padx=25, pady=(0, 20))
+        self.opt_model.pack(anchor="w", padx=15, pady=(0, 15))
         
         # Save Configuration Button
         self.btn_save_config = ctk.CTkButton(
@@ -2011,25 +2192,48 @@ class JarvisApp(ctk.CTk):
         
         return frame
 
+    def on_ai_provider_changed(self, provider):
+        """Highlights the active provider section."""
+        if provider == "DeepSeek":
+            self.frame_deepseek.configure(border_color="#00d2d3", border_width=2)
+            self.frame_gemini.configure(border_color="#1f2d40", border_width=1)
+        else:
+            self.frame_gemini.configure(border_color="#00e5ff", border_width=2)
+            self.frame_deepseek.configure(border_color="#1f2d40", border_width=1)
+
     def load_config_values_into_fields(self):
         """Fills entry widgets with current config values when Tab Config is opened."""
+        provider = self.config.get("ai_provider", "DeepSeek")
+        if provider in self.opt_ai_provider._values:
+            self.opt_ai_provider.set(provider)
+        self.on_ai_provider_changed(provider)
+
+        # DeepSeek
+        self.ent_deepseek_key.delete(0, "end")
+        self.ent_deepseek_key.insert(0, self.config.get("deepseek_api_key", ""))
+        ds_model = self.config.get("deepseek_model", "deepseek-v4-pro")
+        if ds_model in self.opt_deepseek_model._values:
+            self.opt_deepseek_model.set(ds_model)
+
+        # Gemini
         self.ent_api_key.delete(0, "end")
         self.ent_api_key.insert(0, self.config.get("gemini_api_key", ""))
-        
-        # Set selection menu
-        model = self.config.get("gemini_model", "gemini-3.5-flash")
-        if model in self.opt_model._values:
-            self.opt_model.set(model)
+        gem_model = self.config.get("gemini_model", "gemini-3.5-flash")
+        if gem_model in self.opt_model._values:
+            self.opt_model.set(gem_model)
 
     def save_config_from_fields(self):
         """Saves values from entries to local file and updates current state."""
+        self.config["ai_provider"] = self.opt_ai_provider.get()
+        self.config["deepseek_api_key"] = self.ent_deepseek_key.get().strip()
+        self.config["deepseek_model"] = self.opt_deepseek_model.get()
         self.config["gemini_api_key"] = self.ent_api_key.get().strip()
         self.config["gemini_model"] = self.opt_model.get()
         
         if save_config(self.config):
             messagebox.showinfo("Configuración Guardada", "La configuración ha sido persistida con éxito.")
-            # Reconnect Gemini
-            self.init_gemini_client()
+            # Reconnect active AI client
+            self.init_ai_client()
             self.update_system_status()
         else:
             messagebox.showerror("Error de Guardado", "No se pudo guardar la configuración en el archivo local.")

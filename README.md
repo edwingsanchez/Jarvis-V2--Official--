@@ -6,8 +6,8 @@ J.A.R.V.I.S. V2 (Just A Rather Very Intelligent System) es un asistente personal
 
 ## Características Principales
 
-### 1. 💬 Interfaz Conversacional Inteligente
-*   **Asistente Gemini**: Conexión directa con los modelos de Gemini AI utilizando tu propia API Key.
+### 1. 💬 Interfaz Conversacional Inteligente (Multi-Proveedor: DeepSeek y Gemini)
+*   **Soporte Multi-Proveedor**: Conexión directa configurable entre **DeepSeek** (modelos `deepseek-v4-pro`, `deepseek-flash`, etc.) y **Gemini AI** (`gemini-3.5-flash`, etc.).
 *   **Tono Stark**: Jarvis responde de forma servicial, sofisticada y con el característico tono tecnológico de asistente personal de Tony Stark.
 *   **Function Calling**: Jarvis puede abrir aplicaciones del sistema operativo o lanzar aplicaciones nativas de Stark mediante comandos de voz o texto en lenguaje natural (ej. *"Jarvis, inicia la app de domótica"*).
 
@@ -68,9 +68,10 @@ python jarvis_app.py
 
 ### Estructura de Archivos
 *   `jarvis_app.py`: Archivo principal que inicializa el hilo de Tkinter y contiene el diseño de todas las ventanas nativas y la lógica de flujo.
-*   `gemini_client.py`: Cliente de IA conversacional e inyección de herramientas (Function Calling).
+*   `deepseek_client.py`: Cliente de IA conversacional para DeepSeek con llamadas a funciones (`open_external_app`).
+*   `gemini_client.py`: Cliente de IA conversacional para Gemini e inyección de herramientas (Function Calling).
 *   `config_manager.py`: Módulo de persistencia y estructuración por defecto de `config.json`.
-*   `config.json`: Base de datos de configuración (API Keys, URLs, Tokens y Apps registradas).
+*   `config.json`: Base de datos de configuración (API Keys, Proveedor activo, URLs, Tokens y Apps registradas).
 *   `models/`: Carpeta del proyecto donde se almacenan y leen físicamente los modelos `.glb` descargados de Tripo3D.
 
 ---

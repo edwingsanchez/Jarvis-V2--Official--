@@ -1,5 +1,10 @@
 import os
 import logging
+import warnings
+
+# Suppress google.generativeai deprecation warning
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 import google.generativeai as genai
 
 logger = logging.getLogger("gemini_client")

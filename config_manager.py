@@ -7,6 +7,9 @@ logger = logging.getLogger("config_manager")
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
 DEFAULT_CONFIG = {
+    "ai_provider": "DeepSeek",
+    "deepseek_api_key": "",
+    "deepseek_model": "deepseek-v4-pro",
     "gemini_api_key": "",
     "gemini_model": "gemini-3.5-flash",
     "tripo_api_key": "",
